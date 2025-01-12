@@ -10,4 +10,4 @@ Below is the visualization of how the audio waveform appears after embedding an 
 ![graph3](assets/Unknown-2.png)
 
 This project has been evaluated using some of the finest, most pristine, and sonically exquisite audio compositions known to humankind. Thus I used Radiohead.
-![creepy man](assets/Thom-Yorke-GQ-03112019_16x9.webp)
+![creepy man](assets/Thom-Yorke-GQ-03112019_16x9.jpg.webp)
