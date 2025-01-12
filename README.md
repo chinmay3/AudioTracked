@@ -1,4 +1,4 @@
-![Unknown](https://github.com/user-attachments/assets/5bcc0766-2948-47e1-a0e0-7efa5b907412)# AudioTracked
+# AudioTracked
 Audio steganography is a technique of hiding data within an audio file by modifying its properties in a way that the changes remain imperceptible to human ears. 
 
 This project is a great way to hide multimodal files by concealing their bits in the least significant bit (LSB) of each sample in an audio file. Currently, it supports only mono audio files and does not have stereo support.
