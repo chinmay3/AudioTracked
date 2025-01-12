@@ -5,9 +5,8 @@ This project is a great way to hide multimodal files by concealing their bits in
 
 Below is the visualization of how the audio waveform appears after embedding an input in it.
 
-
-![graph1](assets/Unknown.png)
 ![graph2](assets/Unknown3.png)
+![graph1](assets/Unknown.png)
 ![graph3](assets/Unknown2.png)
 
 This project has been evaluated using some of the finest, most pristine, and sonically exquisite audio compositions known to humankind. Thus I used Radiohead.
