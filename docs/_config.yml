@@ -1,0 +1,21 @@
+# GitHub Pages Configuration
+
+# Source: Deploy from a branch
+source: 
+  branch: main
+  path: /docs
+
+# Build settings
+build:
+  command: echo "No build needed - static site"
+  directory: docs
+
+# Custom domain (optional)
+# Uncomment and set your custom domain
+# custom_domain: audiotracked.com
+
+# Redirects
+redirects:
+  - from: /
+    to: /docs/
+    status: 301
