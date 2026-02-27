@@ -16,8 +16,13 @@ This project has been evaluated using some of the finest, most pristine, and son
 - `app.py`: Flask API entrypoint
 - `utils.py`: watermarking/extraction primitives
 - `web_interface.html`: local web UI
+- `render.yaml`: one-click Render blueprint for full hosting
 - `scripts/deploy/`: AWS and EC2 deployment scripts
 - `config/aws/`: AWS policy/config JSON
 - `secrets/`: local key material (ignored from git by `*.pem`)
 - `docs/`: deployment and implementation notes
 - `examples/`: quick demo scripts for audio/image/text flows
+
+## Full Hosting (Recommended)
+- Use Render Blueprint with [`render.yaml`](render.yaml)
+- Steps: see [`docs/RENDER_DEPLOYMENT.md`](docs/RENDER_DEPLOYMENT.md)

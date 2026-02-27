@@ -45,6 +45,11 @@ TEMP_RESULT_FILES = {
     "image_extracted": os.path.join(FILES_DIR, "extracted_image.jpg"),
     "text_watermarked": os.path.join(FILES_DIR, "wtext.wav"),
 }
+SAMPLE_FILES = {
+    "radiohead.wav": "audio/wav",
+    "creep.wav": "audio/wav",
+    "creepyman.jpg": "image/jpeg",
+}
 
 def _ensure_local_path(s3_key):
     local_path = os.path.join(LOCAL_STORAGE_DIR, s3_key)
@@ -501,10 +506,22 @@ def local_file(s3_key):
     filename = os.path.basename(local_path)
     return send_file(local_path, as_attachment=True, download_name=filename)
 
+@app.route('/api/sample/<filename>')
+def sample_file(filename):
+    """Serve bundled sample assets for one-click demo flows."""
+    if filename not in SAMPLE_FILES:
+        return jsonify({"error": "Sample file not found"}), 404
+    sample_path = os.path.join(FILES_DIR, filename)
+    if not os.path.exists(sample_path):
+        return jsonify({"error": "Sample file missing on server"}), 404
+    return send_file(sample_path, mimetype=SAMPLE_FILES[filename], as_attachment=False)
+
 @app.route('/')
 def index():
     """Serve the web interface"""
     return send_file('web_interface.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    port = int(os.getenv("PORT", "5001"))
+    debug = os.getenv("FLASK_DEBUG", "").strip() == "1"
+    app.run(host='0.0.0.0', port=port, debug=debug)
