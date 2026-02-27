@@ -42,6 +42,7 @@ wheels/
 venv/
 env/
 ENV/
+.venv/
 
 # IDE
 .vscode/
@@ -56,3 +57,4 @@ logs/
 # Temporary files
 temp_uploads/
 files/temp_*
+local_storage/

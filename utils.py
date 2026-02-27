@@ -3,12 +3,21 @@ import numpy as np
 import os
 from PIL import Image
 
+FILES_DIR = os.getenv("FILES_DIR", "files")
+os.makedirs(FILES_DIR, exist_ok=True)
+
+def _resolve_input_path(path):
+    if os.path.isabs(path) or os.path.exists(path):
+        return path
+    return os.path.join(FILES_DIR, path)
+
+def _resolve_output_path(path):
+    if os.path.isabs(path) or path.startswith(f"{FILES_DIR}/"):
+        return path
+    return os.path.join(FILES_DIR, path)
+
 def load_audio(filename):
-    # Handle both absolute paths and relative paths with 'files/' prefix
-    if not os.path.isabs(filename) and not os.path.exists(filename):
-        filepath = 'files/' + filename
-    else:
-        filepath = filename
+    filepath = _resolve_input_path(filename)
     with wave.open(filepath, 'rb') as audio_file:
         num_channels = audio_file.getnchannels()
         sample_width = audio_file.getsampwidth()
@@ -17,11 +26,7 @@ def load_audio(filename):
     return audio_data, num_channels, sample_width, frame_rate
 
 def save_audio(filename, audio_data, num_channels, sample_width, frame_rate):
-    # Handle both absolute paths and relative paths with 'files/' prefix
-    if not os.path.isabs(filename) and not filename.startswith('files/'):
-        filepath = 'files/' + filename
-    else:
-        filepath = filename
+    filepath = _resolve_output_path(filename)
     with wave.open(filepath, 'wb') as audio_file:
         audio_file.setnchannels(num_channels)
         audio_file.setsampwidth(sample_width)
@@ -61,7 +66,7 @@ def audio_watermark(filename_audio, filename_watermark):
             audio_data[i] = (audio_data[i] & 0xFE) | bit
     
     # Save to a temp location that can be moved later
-    temp_output = "files/waudio.wav"
+    temp_output = _resolve_output_path("waudio.wav")
     save_audio(temp_output, audio_data, num_channels, sample_width, frame_rate)
     return(small_audio_bits)
 
@@ -116,11 +121,7 @@ def extract_audio_watermark_direct(filename):
 
 def image_watermark(audio, wimage):
     audio_data, num_channels, sample_width, frame_rate = load_audio(audio)
-    # Handle both absolute paths and relative paths with 'files/' prefix
-    if not os.path.isabs(wimage) and not os.path.exists(wimage):
-        image_path = 'files/' + wimage
-    else:
-        image_path = wimage
+    image_path = _resolve_input_path(wimage)
     image = Image.open(image_path).convert('L')
     width, height = image.size
     image_array = np.array(image)
@@ -150,7 +151,7 @@ def extract_image_watermark(audio, width, height, index):
     byte_values = [int(''.join(map(str, extracted_bits[i:i+8])), 2) for i in range(0, len(extracted_bits), 8)]
     image_array = np.array(byte_values, dtype=np.uint8).reshape((height, width))
     image = Image.fromarray(image_array, mode='L')  
-    image.save('files/'+'ewimate.jpg')
+    image.save(_resolve_output_path("extracted_image.jpg"))
 
 def extract_image_watermark_direct(filename):
     """Extract embedded image using YOUR exact logic from extract_image_watermark
@@ -204,7 +205,7 @@ def extract_image_watermark_direct(filename):
                 if variance > 100 and 30 < mean_val < 225:
                     # This looks like a good image, save it
                     image = Image.fromarray(image_array, mode='L')
-                    image.save('files/extracted_image.jpg')
+                    image.save(_resolve_output_path("extracted_image.jpg"))
                     return width, height, index
                     
         except Exception:
@@ -224,7 +225,7 @@ def extract_image_watermark_direct(filename):
             if len(byte_values) >= fallback_width * fallback_height:
                 image_array = np.array(byte_values[:fallback_width * fallback_height], dtype=np.uint8).reshape((fallback_height, fallback_width))
                 image = Image.fromarray(image_array, mode='L')
-                image.save('files/extracted_image.jpg')
+                image.save(_resolve_output_path("extracted_image.jpg"))
                 return fallback_width, fallback_height, fallback_index
                 
     except Exception:
@@ -232,5 +233,4 @@ def extract_image_watermark_direct(filename):
     
     # Ultimate fallback - return default values
     return 256, 256, 0
-
 

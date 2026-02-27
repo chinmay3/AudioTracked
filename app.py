@@ -1,23 +1,18 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
-import tempfile
 import uuid
 import boto3
 import shutil
-from werkzeug.utils import secure_filename
 import json
 from utils import (
     audio_watermark as audio_watermark_util,
     extract_audio_watermark as extract_audio_watermark_util,
     extract_audio_watermark_direct as extract_audio_watermark_direct_util,
     image_watermark as image_watermark_util,
-    extract_image_watermark as extract_image_watermark_util,
     extract_image_watermark_direct as extract_image_watermark_direct_util,
     text_watermark as text_watermark_util,
     extract_text_watermark as extract_text_watermark_util,
-    load_audio,
-    save_audio,
 )
 
 app = Flask(__name__)
@@ -30,6 +25,7 @@ AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 # Storage configuration
 LOCAL_STORAGE_DIR = os.getenv('LOCAL_STORAGE_DIR', 'local_storage')
 DISABLE_S3 = os.getenv('DISABLE_S3', '').strip() == '1'
+FILES_DIR = os.getenv('FILES_DIR', 'files')
 
 # Initialize S3 client if credentials exist and S3 isn't disabled
 _session = boto3.Session()
@@ -40,11 +36,43 @@ s3_client = boto3.client('s3', region_name=AWS_REGION) if S3_ENABLED else None
 # Ensure upload directory exists
 UPLOAD_FOLDER = 'temp_uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(FILES_DIR, exist_ok=True)
+
+TEMP_RESULT_FILES = {
+    "audio_watermarked": os.path.join(FILES_DIR, "waudio.wav"),
+    "audio_extracted": os.path.join(FILES_DIR, "ewaudio.wav"),
+    "image_watermarked": os.path.join(FILES_DIR, "wiaudio.wav"),
+    "image_extracted": os.path.join(FILES_DIR, "extracted_image.jpg"),
+    "text_watermarked": os.path.join(FILES_DIR, "wtext.wav"),
+}
 
 def _ensure_local_path(s3_key):
     local_path = os.path.join(LOCAL_STORAGE_DIR, s3_key)
     os.makedirs(os.path.dirname(local_path), exist_ok=True)
     return local_path
+
+def _store_metadata(session_id, metadata):
+    if S3_ENABLED:
+        s3_client.put_object(
+            Bucket=S3_BUCKET,
+            Key=f"metadata/{session_id}.json",
+            Body=json.dumps(metadata),
+            ContentType='application/json'
+        )
+        return
+    metadata_path = _ensure_local_path(f"metadata/{session_id}.json")
+    with open(metadata_path, 'w') as metadata_file:
+        json.dump(metadata, metadata_file)
+
+def _move_temp_result(source_path, destination_path):
+    if not os.path.exists(source_path):
+        raise FileNotFoundError(f"Expected output file missing: {source_path}")
+    shutil.move(source_path, destination_path)
+
+def _cleanup_paths(*paths):
+    for path in paths:
+        if path and os.path.exists(path):
+            os.remove(path)
 
 def upload_to_s3(file_path, s3_key):
     """Upload file to S3 bucket or local storage"""
@@ -97,9 +125,6 @@ def embed_audio_watermark_endpoint():
         
         # Generate unique IDs for files
         session_id = str(uuid.uuid4())
-        host_filename = secure_filename(host_file.filename)
-        watermark_filename = secure_filename(watermark_file.filename)
-        
         # Save temp files
         host_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_host.wav")
         watermark_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_watermark.wav")
@@ -111,10 +136,9 @@ def embed_audio_watermark_endpoint():
         small_audio_bits = audio_watermark_util(host_path, watermark_path)
         
         # Save result - the utils function saves to "files/waudio.wav"
-        temp_result = "files/waudio.wav"
+        temp_result = TEMP_RESULT_FILES["audio_watermarked"]
         result_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_result.wav")
-        if os.path.exists(temp_result):
-            shutil.move(temp_result, result_path)
+        _move_temp_result(temp_result, result_path)
         
         # Upload to S3
         result_s3_key = f"watermarked/{session_id}_result.wav"
@@ -128,22 +152,10 @@ def embed_audio_watermark_endpoint():
             "result_url": result_url,
             "result_s3_key": result_s3_key
         }
-        if S3_ENABLED:
-            s3_client.put_object(
-                Bucket=S3_BUCKET,
-                Key=f"metadata/{session_id}.json",
-                Body=json.dumps(metadata),
-                ContentType='application/json'
-            )
-        else:
-            metadata_path = _ensure_local_path(f"metadata/{session_id}.json")
-            with open(metadata_path, 'w') as metadata_file:
-                json.dump(metadata, metadata_file)
+        _store_metadata(session_id, metadata)
         
         # Cleanup temp files
-        os.remove(host_path)
-        os.remove(watermark_path)
-        os.remove(result_path)
+        _cleanup_paths(host_path, watermark_path, result_path)
         
         return jsonify({
             "success": True,
@@ -195,13 +207,12 @@ def extract_audio_watermark_endpoint():
         extract_audio_watermark_util(watermarked_path, small_audio_bits)
         
         # Upload extracted audio
-        extracted_path = "files/ewaudio.wav"
+        extracted_path = TEMP_RESULT_FILES["audio_extracted"]
         extracted_s3_key = f"extracted/{session_id}_extracted.wav"
         extracted_url = upload_to_s3(extracted_path, extracted_s3_key)
         
         # Cleanup
-        os.remove(watermarked_path)
-        os.remove(extracted_path)
+        _cleanup_paths(watermarked_path, extracted_path)
         
         return jsonify({
             "success": True,
@@ -230,18 +241,16 @@ def direct_extract_audio_watermark_endpoint():
         extracted_size = extract_audio_watermark_direct_util(audio_path)
         
         # Move result - the utils function saves to "files/ewaudio.wav"
-        temp_result = "files/ewaudio.wav"
+        temp_result = TEMP_RESULT_FILES["audio_extracted"]
         result_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_extracted.wav")
-        if os.path.exists(temp_result):
-            shutil.move(temp_result, result_path)
+        _move_temp_result(temp_result, result_path)
         
         # Upload extracted audio
         extracted_s3_key = f"extracted/{session_id}_extracted.wav"
         extracted_url = upload_to_s3(result_path, extracted_s3_key)
         
         # Cleanup
-        os.remove(audio_path)
-        os.remove(result_path)
+        _cleanup_paths(audio_path, result_path)
         
         return jsonify({
             "success": True,
@@ -276,10 +285,9 @@ def embed_image_watermark_endpoint():
         w, h, index = image_watermark_util(audio_path, image_path)
         
         # Move result - the utils function saves to "files/wiaudio.wav"
-        temp_result = "files/wiaudio.wav"
+        temp_result = TEMP_RESULT_FILES["image_watermarked"]
         result_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_result.wav")
-        if os.path.exists(temp_result):
-            shutil.move(temp_result, result_path)
+        _move_temp_result(temp_result, result_path)
         
         # Upload to S3
         result_s3_key = f"image_watermarked/{session_id}_result.wav"
@@ -295,22 +303,10 @@ def embed_image_watermark_endpoint():
             "result_url": result_url,
             "result_s3_key": result_s3_key
         }
-        if S3_ENABLED:
-            s3_client.put_object(
-                Bucket=S3_BUCKET,
-                Key=f"metadata/{session_id}.json",
-                Body=json.dumps(metadata),
-                ContentType='application/json'
-            )
-        else:
-            metadata_path = _ensure_local_path(f"metadata/{session_id}.json")
-            with open(metadata_path, 'w') as metadata_file:
-                json.dump(metadata, metadata_file)
+        _store_metadata(session_id, metadata)
         
         # Cleanup
-        os.remove(audio_path)
-        os.remove(image_path)
-        os.remove(result_path)
+        _cleanup_paths(audio_path, image_path, result_path)
         
         return jsonify({
             "success": True,
@@ -340,18 +336,16 @@ def direct_extract_image_watermark_endpoint():
         width, height, extracted_bits = extract_image_watermark_direct_util(audio_path)
         
         # Move result - the utils function saves to "files/extracted_image.jpg"
-        temp_result = "files/extracted_image.jpg"
+        temp_result = TEMP_RESULT_FILES["image_extracted"]
         result_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_extracted.jpg")
-        if os.path.exists(temp_result):
-            shutil.move(temp_result, result_path)
+        _move_temp_result(temp_result, result_path)
         
         # Upload extracted image
         extracted_s3_key = f"extracted/{session_id}_extracted.jpg"
         extracted_url = upload_to_s3(result_path, extracted_s3_key)
         
         # Cleanup
-        os.remove(audio_path)
-        os.remove(result_path)
+        _cleanup_paths(audio_path, result_path)
         
         return jsonify({
             "success": True,
@@ -387,10 +381,9 @@ def embed_text_watermark_endpoint():
         text_watermark_util(text, audio_path)
         
         # Move result - the utils function saves to "files/wtext.wav"
-        temp_result = "files/wtext.wav"
+        temp_result = TEMP_RESULT_FILES["text_watermarked"]
         result_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_result.wav")
-        if os.path.exists(temp_result):
-            shutil.move(temp_result, result_path)
+        _move_temp_result(temp_result, result_path)
         
         # Upload to S3
         result_s3_key = f"text_watermarked/{session_id}_result.wav"
@@ -404,21 +397,10 @@ def embed_text_watermark_endpoint():
             "result_url": result_url,
             "result_s3_key": result_s3_key
         }
-        if S3_ENABLED:
-            s3_client.put_object(
-                Bucket=S3_BUCKET,
-                Key=f"metadata/{session_id}.json",
-                Body=json.dumps(metadata),
-                ContentType='application/json'
-            )
-        else:
-            metadata_path = _ensure_local_path(f"metadata/{session_id}.json")
-            with open(metadata_path, 'w') as metadata_file:
-                json.dump(metadata, metadata_file)
+        _store_metadata(session_id, metadata)
         
         # Cleanup
-        os.remove(audio_path)
-        os.remove(result_path)
+        _cleanup_paths(audio_path, result_path)
         
         return jsonify({
             "success": True,
@@ -448,7 +430,7 @@ def extract_text_watermark_endpoint():
         extracted_text = extract_text_watermark_util(audio_path)
         
         # Cleanup
-        os.remove(audio_path)
+        _cleanup_paths(audio_path)
         
         return jsonify({
             "success": True,

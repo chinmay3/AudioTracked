@@ -11,3 +11,13 @@ Below is the visualization of how the audio waveform appears after embedding an 
 
 This project has been evaluated using some of the finest, most pristine, and sonically exquisite audio compositions known to humankind. Thus Radiohead.
 ![creepy man](assets/Thom-Yorke-GQ-03112019_16x9.jpg.webp)
+
+## Repository layout
+- `app.py`: Flask API entrypoint
+- `utils.py`: watermarking/extraction primitives
+- `web_interface.html`: local web UI
+- `scripts/deploy/`: AWS and EC2 deployment scripts
+- `config/aws/`: AWS policy/config JSON
+- `secrets/`: local key material (ignored from git by `*.pem`)
+- `docs/`: deployment and implementation notes
+- `examples/`: quick demo scripts for audio/image/text flows
