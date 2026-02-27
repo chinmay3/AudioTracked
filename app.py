@@ -8,10 +8,16 @@ import shutil
 from werkzeug.utils import secure_filename
 import json
 from utils import (
-    audio_watermark, extract_audio_watermark, extract_audio_watermark_direct,
-    image_watermark, extract_image_watermark, extract_image_watermark_direct,
-    text_watermark, extract_text_watermark,
-    load_audio, save_audio
+    audio_watermark as audio_watermark_util,
+    extract_audio_watermark as extract_audio_watermark_util,
+    extract_audio_watermark_direct as extract_audio_watermark_direct_util,
+    image_watermark as image_watermark_util,
+    extract_image_watermark as extract_image_watermark_util,
+    extract_image_watermark_direct as extract_image_watermark_direct_util,
+    text_watermark as text_watermark_util,
+    extract_text_watermark as extract_text_watermark_util,
+    load_audio,
+    save_audio,
 )
 
 app = Flask(__name__)
@@ -21,15 +27,31 @@ CORS(app)
 S3_BUCKET = os.getenv('S3_BUCKET', 'audiotracked-files')
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 
-# Initialize S3 client
-s3_client = boto3.client('s3', region_name=AWS_REGION)
+# Storage configuration
+LOCAL_STORAGE_DIR = os.getenv('LOCAL_STORAGE_DIR', 'local_storage')
+DISABLE_S3 = os.getenv('DISABLE_S3', '').strip() == '1'
+
+# Initialize S3 client if credentials exist and S3 isn't disabled
+_session = boto3.Session()
+_credentials = _session.get_credentials()
+S3_ENABLED = (not DISABLE_S3) and (_credentials is not None)
+s3_client = boto3.client('s3', region_name=AWS_REGION) if S3_ENABLED else None
 
 # Ensure upload directory exists
 UPLOAD_FOLDER = 'temp_uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+def _ensure_local_path(s3_key):
+    local_path = os.path.join(LOCAL_STORAGE_DIR, s3_key)
+    os.makedirs(os.path.dirname(local_path), exist_ok=True)
+    return local_path
+
 def upload_to_s3(file_path, s3_key):
-    """Upload file to S3 bucket"""
+    """Upload file to S3 bucket or local storage"""
+    if not S3_ENABLED:
+        local_path = _ensure_local_path(s3_key)
+        shutil.copyfile(file_path, local_path)
+        return f"/api/local-file/{s3_key}"
     try:
         s3_client.upload_file(file_path, S3_BUCKET, s3_key)
         # Return a signed URL that works for 7 days instead of public URL
@@ -43,7 +65,13 @@ def upload_to_s3(file_path, s3_key):
         raise Exception(f"Failed to upload to S3: {str(e)}")
 
 def download_from_s3(s3_key, local_path):
-    """Download file from S3 bucket"""
+    """Download file from S3 bucket or local storage"""
+    if not S3_ENABLED:
+        source_path = os.path.join(LOCAL_STORAGE_DIR, s3_key)
+        if not os.path.exists(source_path):
+            raise Exception("File not found in local storage")
+        shutil.copyfile(source_path, local_path)
+        return True
     try:
         s3_client.download_file(S3_BUCKET, s3_key, local_path)
         return True
@@ -55,7 +83,7 @@ def health_check():
     return jsonify({"status": "healthy", "service": "AudioTracked API"})
 
 @app.route('/api/audio-watermark', methods=['POST'])
-def embed_audio_watermark():
+def embed_audio_watermark_endpoint():
     """Embed audio file into another audio file"""
     try:
         if 'host_audio' not in request.files or 'watermark_audio' not in request.files:
@@ -80,7 +108,7 @@ def embed_audio_watermark():
         watermark_file.save(watermark_path)
         
         # Process watermarking
-        small_audio_bits = audio_watermark(host_path, watermark_path)
+        small_audio_bits = audio_watermark_util(host_path, watermark_path)
         
         # Save result - the utils function saves to "files/waudio.wav"
         temp_result = "files/waudio.wav"
@@ -97,14 +125,20 @@ def embed_audio_watermark():
             "session_id": session_id,
             "type": "audio_watermark",
             "small_audio_bits": small_audio_bits,
-            "result_url": result_url
+            "result_url": result_url,
+            "result_s3_key": result_s3_key
         }
-        s3_client.put_object(
-            Bucket=S3_BUCKET,
-            Key=f"metadata/{session_id}.json",
-            Body=json.dumps(metadata),
-            ContentType='application/json'
-        )
+        if S3_ENABLED:
+            s3_client.put_object(
+                Bucket=S3_BUCKET,
+                Key=f"metadata/{session_id}.json",
+                Body=json.dumps(metadata),
+                ContentType='application/json'
+            )
+        else:
+            metadata_path = _ensure_local_path(f"metadata/{session_id}.json")
+            with open(metadata_path, 'w') as metadata_file:
+                json.dump(metadata, metadata_file)
         
         # Cleanup temp files
         os.remove(host_path)
@@ -122,7 +156,7 @@ def embed_audio_watermark():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/audio-watermark/extract', methods=['POST'])
-def extract_audio_watermark():
+def extract_audio_watermark_endpoint():
     """Extract embedded audio from watermarked file"""
     try:
         data = request.get_json()
@@ -133,22 +167,32 @@ def extract_audio_watermark():
         
         # Download metadata
         try:
-            metadata_response = s3_client.get_object(
-                Bucket=S3_BUCKET,
-                Key=f"metadata/{session_id}.json"
-            )
-            metadata = json.loads(metadata_response['Body'].read())
+            if S3_ENABLED:
+                metadata_response = s3_client.get_object(
+                    Bucket=S3_BUCKET,
+                    Key=f"metadata/{session_id}.json"
+                )
+                metadata = json.loads(metadata_response['Body'].read())
+            else:
+                metadata_path = os.path.join(LOCAL_STORAGE_DIR, f"metadata/{session_id}.json")
+                with open(metadata_path, 'r') as metadata_file:
+                    metadata = json.load(metadata_file)
             small_audio_bits = metadata['small_audio_bits']
-            result_s3_key = metadata['result_url'].split('/')[-1]
-        except:
+            result_s3_key = metadata.get('result_s3_key')
+            if not result_s3_key:
+                result_url = metadata.get('result_url', '')
+                result_s3_key = result_url.split('?')[0].split('/')[-1]
+            if not result_s3_key.startswith("watermarked/"):
+                result_s3_key = f"watermarked/{result_s3_key}"
+        except Exception:
             return jsonify({"error": "Session not found"}), 404
         
         # Download watermarked file
         watermarked_path = os.path.join(UPLOAD_FOLDER, f"{session_id}_watermarked.wav")
-        download_from_s3(f"watermarked/{result_s3_key}", watermarked_path)
+        download_from_s3(result_s3_key, watermarked_path)
         
         # Extract watermark
-        extract_audio_watermark(watermarked_path, small_audio_bits)
+        extract_audio_watermark_util(watermarked_path, small_audio_bits)
         
         # Upload extracted audio
         extracted_path = "files/ewaudio.wav"
@@ -169,7 +213,7 @@ def extract_audio_watermark():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/audio-watermark/direct-extract', methods=['POST'])
-def direct_extract_audio_watermark():
+def direct_extract_audio_watermark_endpoint():
     """Directly extract embedded audio from uploaded watermarked file"""
     try:
         if 'audio' not in request.files:
@@ -183,7 +227,7 @@ def direct_extract_audio_watermark():
         audio_file.save(audio_path)
         
         # Extract watermark using direct method
-        extracted_size = extract_audio_watermark_direct(audio_path)
+        extracted_size = extract_audio_watermark_direct_util(audio_path)
         
         # Move result - the utils function saves to "files/ewaudio.wav"
         temp_result = "files/ewaudio.wav"
@@ -210,7 +254,7 @@ def direct_extract_audio_watermark():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/image-watermark', methods=['POST'])
-def embed_image_watermark():
+def embed_image_watermark_endpoint():
     """Embed image into audio file"""
     try:
         if 'audio' not in request.files or 'image' not in request.files:
@@ -229,7 +273,7 @@ def embed_image_watermark():
         image_file.save(image_path)
         
         # Process watermarking
-        w, h, index = image_watermark(audio_path, image_path)
+        w, h, index = image_watermark_util(audio_path, image_path)
         
         # Move result - the utils function saves to "files/wiaudio.wav"
         temp_result = "files/wiaudio.wav"
@@ -248,14 +292,20 @@ def embed_image_watermark():
             "width": w,
             "height": h,
             "index": index,
-            "result_url": result_url
+            "result_url": result_url,
+            "result_s3_key": result_s3_key
         }
-        s3_client.put_object(
-            Bucket=S3_BUCKET,
-            Key=f"metadata/{session_id}.json",
-            Body=json.dumps(metadata),
-            ContentType='application/json'
-        )
+        if S3_ENABLED:
+            s3_client.put_object(
+                Bucket=S3_BUCKET,
+                Key=f"metadata/{session_id}.json",
+                Body=json.dumps(metadata),
+                ContentType='application/json'
+            )
+        else:
+            metadata_path = _ensure_local_path(f"metadata/{session_id}.json")
+            with open(metadata_path, 'w') as metadata_file:
+                json.dump(metadata, metadata_file)
         
         # Cleanup
         os.remove(audio_path)
@@ -273,7 +323,7 @@ def embed_image_watermark():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/image-watermark/direct-extract', methods=['POST'])
-def direct_extract_image_watermark():
+def direct_extract_image_watermark_endpoint():
     """Directly extract embedded image from uploaded watermarked file"""
     try:
         if 'audio' not in request.files:
@@ -287,7 +337,7 @@ def direct_extract_image_watermark():
         audio_file.save(audio_path)
         
         # Extract watermark using direct method
-        width, height, extracted_bits = extract_image_watermark_direct(audio_path)
+        width, height, extracted_bits = extract_image_watermark_direct_util(audio_path)
         
         # Move result - the utils function saves to "files/extracted_image.jpg"
         temp_result = "files/extracted_image.jpg"
@@ -316,7 +366,7 @@ def direct_extract_image_watermark():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/text-watermark', methods=['POST'])
-def embed_text_watermark():
+def embed_text_watermark_endpoint():
     """Embed text into audio file"""
     try:
         if 'audio' not in request.files:
@@ -334,7 +384,7 @@ def embed_text_watermark():
         audio_file.save(audio_path)
         
         # Process watermarking
-        text_watermark(text, audio_path)
+        text_watermark_util(text, audio_path)
         
         # Move result - the utils function saves to "files/wtext.wav"
         temp_result = "files/wtext.wav"
@@ -351,14 +401,20 @@ def embed_text_watermark():
             "session_id": session_id,
             "type": "text_watermark",
             "text": text,
-            "result_url": result_url
+            "result_url": result_url,
+            "result_s3_key": result_s3_key
         }
-        s3_client.put_object(
-            Bucket=S3_BUCKET,
-            Key=f"metadata/{session_id}.json",
-            Body=json.dumps(metadata),
-            ContentType='application/json'
-        )
+        if S3_ENABLED:
+            s3_client.put_object(
+                Bucket=S3_BUCKET,
+                Key=f"metadata/{session_id}.json",
+                Body=json.dumps(metadata),
+                ContentType='application/json'
+            )
+        else:
+            metadata_path = _ensure_local_path(f"metadata/{session_id}.json")
+            with open(metadata_path, 'w') as metadata_file:
+                json.dump(metadata, metadata_file)
         
         # Cleanup
         os.remove(audio_path)
@@ -375,7 +431,7 @@ def embed_text_watermark():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/text-watermark/extract', methods=['POST'])
-def extract_text_watermark():
+def extract_text_watermark_endpoint():
     """Extract text from watermarked audio"""
     try:
         if 'audio' not in request.files:
@@ -389,7 +445,7 @@ def extract_text_watermark():
         audio_file.save(audio_path)
         
         # Extract text
-        extracted_text = extract_text_watermark(audio_path)
+        extracted_text = extract_text_watermark_util(audio_path)
         
         # Cleanup
         os.remove(audio_path)
@@ -407,6 +463,19 @@ def extract_text_watermark():
 def download_file(filename):
     """Download a file by serving the S3 content directly"""
     try:
+        if not S3_ENABLED:
+            local_candidates = [
+                os.path.join(LOCAL_STORAGE_DIR, "watermarked", filename),
+                os.path.join(LOCAL_STORAGE_DIR, "image_watermarked", filename),
+                os.path.join(LOCAL_STORAGE_DIR, "text_watermarked", filename),
+                os.path.join(LOCAL_STORAGE_DIR, "extracted", filename),
+                os.path.join(LOCAL_STORAGE_DIR, "downloads", filename),
+            ]
+            for candidate in local_candidates:
+                if os.path.exists(candidate):
+                    return send_file(candidate, as_attachment=True, download_name=filename)
+            return jsonify({"error": "File not found"}), 404
+
         # Get the file from S3
         s3_key = f"downloads/{filename}"
         
@@ -439,10 +508,21 @@ def download_file(filename):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/local-file/<path:s3_key>')
+def local_file(s3_key):
+    """Serve locally stored files when S3 is disabled."""
+    if S3_ENABLED:
+        return jsonify({"error": "Local file serving is disabled when S3 is enabled"}), 400
+    local_path = os.path.join(LOCAL_STORAGE_DIR, s3_key)
+    if not os.path.exists(local_path):
+        return jsonify({"error": "File not found"}), 404
+    filename = os.path.basename(local_path)
+    return send_file(local_path, as_attachment=True, download_name=filename)
+
 @app.route('/')
 def index():
     """Serve the web interface"""
     return send_file('web_interface.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

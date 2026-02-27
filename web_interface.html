@@ -219,8 +219,8 @@
     </div>
 
     <script>
-        // Configuration - UPDATE THIS with your EC2 IP
-        const API_BASE_URL = 'http://54.204.110.168:5000/api';
+        // Configuration - use same origin by default
+        const API_BASE_URL = `${window.location.origin}/api`;
         
         function switchTab(tab, button) {
             // Remove active class from all tabs and content
