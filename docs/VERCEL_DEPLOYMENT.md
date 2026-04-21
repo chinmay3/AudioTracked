@@ -1,107 +1,48 @@
-# 🚀 Vercel Deployment Guide for AudioTracked
+# Vercel Frontend Deployment
 
-## Quick Deploy to Vercel
+This guide is for the fast split setup:
+- `frontend/` on Vercel
+- Flask API on Render
 
-### Option 1: Deploy via Vercel CLI (Recommended)
+Do not import the repository root into Vercel for this flow. The root contains a Python `vercel.json` for the Flask app. Set the Vercel project Root Directory to `frontend`.
 
-1. **Install Vercel CLI**:
-   ```bash
-   npm i -g vercel
-   ```
+## 1. Point the frontend at your Render API
 
-2. **Login to Vercel**:
-   ```bash
-   vercel login
-   ```
+Edit [`frontend/config.js`](../frontend/config.js):
 
-3. **Deploy from project directory**:
-   ```bash
-   vercel
-   ```
-
-4. **Follow the prompts**:
-   - Set up and deploy? **Y**
-   - Which scope? **Your account**
-   - Link to existing project? **N**
-   - Project name: **audiotracked**
-   - Directory: **./** (current directory)
-   - Override settings? **N**
-
-### Option 2: Deploy via GitHub Integration
-
-1. **Go to [vercel.com](https://vercel.com)**
-2. **Sign up/Login with GitHub**
-3. **Click "New Project"**
-4. **Import your repository**: `chinmay3/AudioTracked`
-5. **Configure settings**:
-   - Framework Preset: **Other**
-   - Build Command: `echo "No build needed"`
-   - Output Directory: `public`
-   - Install Command: `pip install -r requirements.txt`
-6. **Click "Deploy"**
-
-## Environment Variables
-
-After deployment, add these environment variables in Vercel dashboard:
-
-```
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_REGION=us-east-1
-S3_BUCKET=your_bucket_name
+```js
+window.AUDIOTRACKED_CONFIG = {
+    apiBaseUrl: "https://<your-render-service>.onrender.com/api"
+};
 ```
 
-## Project Structure
+If you later move the backend to a custom domain, update this URL.
 
-```
-AudioTracked/
-├── app.py              # Flask API server
-├── vercel.json         # Vercel configuration
-├── requirements.txt    # Python dependencies
-├── public/
-│   └── index.html      # Landing page
-├── ios_frontend/       # SwiftUI app
-└── ... (other files)
-```
+## 2. Import the frontend into Vercel
 
-## Features
+1. Open Vercel and click `Add New...` -> `Project`.
+2. Import this repository.
+3. In project settings, set `Root Directory` to `frontend`.
+4. Framework preset: `Other`.
+5. Leave `Build Command`, `Install Command`, and `Output Directory` empty.
+6. Deploy.
 
-- ✅ **Automatic HTTPS**: SSL certificate included
-- ✅ **Global CDN**: Fast loading worldwide
-- ✅ **Custom Domain**: Add your own domain
-- ✅ **Environment Variables**: Secure credential storage
-- ✅ **Auto Deploy**: Deploys on every git push
+## 3. Verify
 
-## URLs After Deployment
+After deploy:
+- The homepage should load immediately from Vercel.
+- Sample file loading should hit `https://<your-render-service>.onrender.com/api/sample/...`
+- Embed and extract responses should return working download and preview links.
 
-- **Main Site**: `https://audiotracked.vercel.app`
-- **API Endpoints**: `https://audiotracked.vercel.app/api/`
-- **Health Check**: `https://audiotracked.vercel.app/health`
+## 4. Optional custom domain
 
-## Troubleshooting
+1. Open the Vercel project.
+2. Go to `Settings` -> `Domains`.
+3. Add your domain.
+4. Update DNS as instructed by Vercel.
 
-### If deployment fails:
-1. Check that all dependencies are in `requirements.txt`
-2. Ensure `vercel.json` is properly configured
-3. Check Vercel logs in dashboard
+## Notes
 
-### If API doesn't work:
-1. Verify environment variables are set
-2. Check AWS credentials are correct
-3. Ensure S3 bucket exists and is accessible
-
-## Custom Domain (Optional)
-
-1. **Buy a domain** (GoDaddy, Namecheap, etc.)
-2. **In Vercel dashboard**:
-   - Go to Project Settings
-   - Click "Domains"
-   - Add your domain
-3. **Update DNS**:
-   - Add CNAME record: `www` → `cname.vercel-dns.com`
-   - Add A record: `@` → Vercel IP
-
-## Support
-
-- **Vercel Docs**: https://vercel.com/docs
-- **Flask on Vercel**: https://vercel.com/guides/deploying-flask-to-vercel
+- Vercel hosts only the static frontend in this setup.
+- The frontend already normalizes relative URLs returned by the backend.
+- If `frontend/config.js` is left empty, the site falls back to same-origin `/api`, which is useful for local or single-host deployments but not for Vercel + Render.

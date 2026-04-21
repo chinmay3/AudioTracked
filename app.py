@@ -1,10 +1,11 @@
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file, has_request_context
 from flask_cors import CORS
 import os
 import uuid
 import boto3
 import shutil
 import json
+from urllib.parse import quote
 from utils import (
     audio_watermark as audio_watermark_util,
     extract_audio_watermark as extract_audio_watermark_util,
@@ -26,6 +27,7 @@ AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 LOCAL_STORAGE_DIR = os.getenv('LOCAL_STORAGE_DIR', 'local_storage')
 DISABLE_S3 = os.getenv('DISABLE_S3', '').strip() == '1'
 FILES_DIR = os.getenv('FILES_DIR', 'files')
+PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL', '').rstrip('/')
 
 # Initialize S3 client if credentials exist and S3 isn't disabled
 _session = boto3.Session()
@@ -56,6 +58,23 @@ def _ensure_local_path(s3_key):
     os.makedirs(os.path.dirname(local_path), exist_ok=True)
     return local_path
 
+def _public_base_url():
+    if PUBLIC_BASE_URL:
+        return PUBLIC_BASE_URL
+    if has_request_context():
+        forwarded_proto = request.headers.get('X-Forwarded-Proto', request.scheme)
+        forwarded_host = request.headers.get('X-Forwarded-Host', request.host)
+        return f"{forwarded_proto}://{forwarded_host}".rstrip('/')
+    return ''
+
+def _local_file_url(s3_key):
+    encoded_key = quote(s3_key, safe='/')
+    relative_path = f"/api/local-file/{encoded_key}"
+    base_url = _public_base_url()
+    if base_url:
+        return f"{base_url}{relative_path}"
+    return relative_path
+
 def _store_metadata(session_id, metadata):
     if S3_ENABLED:
         s3_client.put_object(
@@ -84,7 +103,7 @@ def upload_to_s3(file_path, s3_key):
     if not S3_ENABLED:
         local_path = _ensure_local_path(s3_key)
         shutil.copyfile(file_path, local_path)
-        return f"/api/local-file/{s3_key}"
+        return _local_file_url(s3_key)
     try:
         s3_client.upload_file(file_path, S3_BUCKET, s3_key)
         # Return a signed URL that works for 7 days instead of public URL
@@ -516,10 +535,15 @@ def sample_file(filename):
         return jsonify({"error": "Sample file missing on server"}), 404
     return send_file(sample_path, mimetype=SAMPLE_FILES[filename], as_attachment=False)
 
+@app.route('/config.js')
+def frontend_config():
+    """Serve the frontend config file for the backend-hosted UI."""
+    return send_file(os.path.join('frontend', 'config.js'), mimetype='application/javascript')
+
 @app.route('/')
 def index():
     """Serve the web interface"""
-    return send_file('web_interface.html')
+    return send_file(os.path.join('frontend', 'index.html'))
 
 if __name__ == '__main__':
     port = int(os.getenv("PORT", "5001"))

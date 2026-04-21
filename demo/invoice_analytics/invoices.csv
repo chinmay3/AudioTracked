@@ -1,0 +1,35 @@
+invoice_id,actor_id,project_name,client_name,invoice_date,due_date,payment_date,hours_worked,rate_per_hour_usd,invoice_amount_usd,status,payment_method,compression_review,delivery_channel
+INV001,VA001,Game Trailer VO,RedPeak Studios,2026-01-05,2026-02-04,2026-01-29,6.5,185,1202.5,Paid,ACH,Passed,S3 Upload
+INV002,VA002,Podcast Intro Pack,Signal Forge,2026-01-07,2026-01-22,2026-01-20,4.0,160,640.0,Paid,ACH,Passed,Email
+INV003,VA003,Spanish IVR Prompt Set,Orbit Telecom,2026-01-08,2026-02-07,2026-02-12,5.5,175,962.5,Paid,Wire,Passed,S3 Upload
+INV004,VA004,Mobile App Tutorial,Northstar Learning,2026-01-10,2026-02-09,,7.0,190,1330.0,Overdue,ACH,Passed,Portal
+INV005,VA005,Explainer Video,FrameSpring,2026-01-12,2026-01-27,2026-01-25,3.5,155,542.5,Paid,PayPal,Passed,Email
+INV006,VA006,Commercial Tagline Series,Beacon Media,2026-01-14,2026-02-13,2026-02-11,8.0,170,1360.0,Paid,ACH,Passed,S3 Upload
+INV007,VA007,Luxury Brand Spot,Velvet House,2026-01-16,2026-02-15,2026-02-16,5.0,200,1000.0,Paid,Wire,Passed,Portal
+INV008,VA008,Training Module Narration,CoreAxis,2026-01-18,2026-02-02,,9.0,165,1485.0,Overdue,ACH,Passed,S3 Upload
+INV009,VA009,Mandarin Product Demo,Helio Systems,2026-01-20,2026-02-19,2026-02-18,6.0,210,1260.0,Paid,Wire,Passed,Portal
+INV010,VA010,Radio Ad Campaign,Juniper Foods,2026-01-21,2026-02-05,2026-02-04,4.5,150,675.0,Paid,ACH,Passed,Email
+INV011,VA011,Healthcare eLearning,WellPath,2026-01-23,2026-02-07,,10.0,145,1450.0,Pending,ACH,Review Needed,S3 Upload
+INV012,VA012,Documentary Narration,Atlas Pictures,2026-01-25,2026-02-24,2026-02-23,7.5,180,1350.0,Paid,Wire,Passed,Portal
+INV013,VA013,Streaming Promo,Altair Stream,2026-01-27,2026-02-26,2026-02-28,5.0,172,860.0,Paid,ACH,Passed,Email
+INV014,VA014,Indie Game Character Pack,Pixel Harbor,2026-01-29,2026-02-13,,8.5,158,1343.0,Overdue,PayPal,Review Needed,S3 Upload
+INV015,VA015,Brand Anthem Cutdown,Northline Audio,2026-01-30,2026-03-01,2026-02-27,6.0,168,1008.0,Paid,ACH,Passed,Portal
+INV016,VA016,Vietnamese Tutorial Series,Delta Soft,2026-02-02,2026-03-04,,7.5,195,1462.5,Pending,Wire,Passed,S3 Upload
+INV017,VA017,Audio Drama Episode 1,StoryGrid,2026-02-04,2026-02-19,2026-02-18,5.0,162,810.0,Paid,ACH,Passed,Portal
+INV018,VA001,Audio Drama Episode 2,StoryGrid,2026-02-08,2026-03-10,,5.5,185,1017.5,Pending,ACH,Passed,Portal
+INV019,VA002,Fintech App Explainer,LedgerLane,2026-02-10,2026-02-25,2026-02-24,4.5,160,720.0,Paid,ACH,Passed,S3 Upload
+INV020,VA003,Spanish Campaign Retainer,Waveform Ads,2026-02-11,2026-03-13,,9.0,175,1575.0,Pending,Wire,Passed,Portal
+INV021,VA004,UX Voice Prompt Pack,OpenTrail,2026-02-14,2026-03-16,2026-03-14,6.0,190,1140.0,Paid,ACH,Passed,Portal
+INV022,VA005,SaaS Demo Voiceover,CloudMetric,2026-02-16,2026-03-03,2026-03-01,4.0,155,620.0,Paid,PayPal,Passed,Email
+INV023,VA006,Holiday Spot Refresh,Beacon Media,2026-02-18,2026-03-20,,3.5,170,595.0,Pending,ACH,Passed,S3 Upload
+INV024,VA007,Italian Travel Ad,SunVista,2026-02-20,2026-03-22,2026-03-21,4.5,200,900.0,Paid,Wire,Passed,Portal
+INV025,VA008,Onboarding Voice Pack,NextStep HR,2026-02-22,2026-03-09,,8.0,165,1320.0,Overdue,ACH,Review Needed,Email
+INV026,VA009,Product Launch Reel,Helio Systems,2026-02-24,2026-03-26,2026-03-25,5.5,210,1155.0,Paid,Wire,Passed,Portal
+INV027,VA010,Regional Radio Cut,Juniper Foods,2026-02-25,2026-03-12,2026-03-10,3.5,150,525.0,Paid,ACH,Passed,Email
+INV028,VA011,Compliance Training Series,WellPath,2026-02-27,2026-03-14,,9.0,145,1305.0,Overdue,ACH,Review Needed,S3 Upload
+INV029,VA012,Nature Film Narration,Atlas Pictures,2026-03-01,2026-03-31,,6.5,180,1170.0,Pending,Wire,Passed,Portal
+INV030,VA013,Streaming Promo Refresh,Altair Stream,2026-03-03,2026-04-02,,4.5,172,774.0,Pending,ACH,Passed,Email
+INV031,VA014,Game DLC Character Set,Pixel Harbor,2026-03-04,2026-03-19,,7.0,158,1106.0,Overdue,PayPal,Review Needed,S3 Upload
+INV032,VA015,Auto Brand Web Spot,Vertex Motors,2026-03-06,2026-04-05,,5.0,168,840.0,Pending,ACH,Passed,Portal
+INV033,VA016,Vietnamese App Tutorial 2,Delta Soft,2026-03-08,2026-04-07,,6.0,195,1170.0,Pending,Wire,Passed,S3 Upload
+INV034,VA017,Audio Drama Episode 3,StoryGrid,2026-03-09,2026-03-24,,5.5,162,891.0,Pending,ACH,Passed,Portal

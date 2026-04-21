@@ -11,3 +11,23 @@ Below is the visualization of how the audio waveform appears after embedding an 
 
 This project has been evaluated using some of the finest, most pristine, and sonically exquisite audio compositions known to humankind. Thus Radiohead.
 ![creepy man](assets/Thom-Yorke-GQ-03112019_16x9.jpg.webp)
+
+## Repository layout
+- `app.py`: Flask API entrypoint
+- `utils.py`: watermarking/extraction primitives
+- `frontend/`: static web UI for Vercel or local serving
+- `render.yaml`: Render blueprint for the Flask backend
+- `vercel.json`: legacy root-level Vercel config for the Flask app
+- `scripts/deploy/`: AWS and EC2 deployment scripts
+- `config/aws/`: AWS policy/config JSON
+- `secrets/`: local key material (ignored from git by `*.pem`)
+- `docs/`: deployment and implementation notes
+- `examples/`: quick demo scripts for audio/image/text flows
+
+## Hosting
+- Fast frontend + backend split: deploy [`frontend/`](frontend) to Vercel and keep the Flask API on Render.
+- Full single-service hosting: deploy the whole Flask app on Render with [`render.yaml`](render.yaml).
+
+Steps:
+- Vercel frontend: [`docs/VERCEL_DEPLOYMENT.md`](docs/VERCEL_DEPLOYMENT.md)
+- Render backend: [`docs/RENDER_DEPLOYMENT.md`](docs/RENDER_DEPLOYMENT.md)

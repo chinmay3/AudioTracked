@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Actor Invoice Operations Dashboard</title>
+  <style>
+    :root {
+      --bg: #efe7dc;
+      --panel: #f9f6f0;
+      --ink: #1e2430;
+      --muted: #657084;
+      --line: #d7ccbb;
+      --paid: #1f7a5c;
+      --pending: #d9a441;
+      --overdue: #c44536;
+      --accent: #28536b;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, rgba(255,255,255,0.7), transparent 35%),
+        linear-gradient(135deg, #f4ede4 0%, var(--bg) 45%, #e6ddcf 100%);
+      color: var(--ink);
+    }
+
+    .wrap {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .title {
+      font-size: 34px;
+      line-height: 1.05;
+      margin: 0;
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .badge {
+      background: rgba(40, 83, 107, 0.12);
+      color: var(--accent);
+      border: 1px solid rgba(40, 83, 107, 0.2);
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+    }
+
+    .card {
+      background: rgba(249, 246, 240, 0.88);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(215, 204, 187, 0.9);
+      border-radius: 22px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 16px 40px rgba(54, 45, 32, 0.08);
+    }
+
+    .kpi { grid-column: span 3; min-height: 134px; }
+    .wide { grid-column: span 7; }
+    .narrow { grid-column: span 5; }
+    .half { grid-column: span 6; }
+
+    .eyebrow {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 10px;
+    }
+
+    .value {
+      font-size: 38px;
+      line-height: 1;
+      margin: 0 0 8px;
+    }
+
+    .delta {
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 20px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .bars {
+      display: grid;
+      gap: 14px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 160px 1fr 70px;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+    }
+
+    .track {
+      height: 12px;
+      border-radius: 999px;
+      background: #e7ddcf;
+      overflow: hidden;
+    }
+
+    .fill {
+      height: 100%;
+      border-radius: 999px;
+    }
+
+    .label-muted {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: normal;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .footer-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 1100px) {
+      .kpi, .wide, .narrow, .half { grid-column: span 12; }
+      .bar-row { grid-template-columns: 120px 1fr 60px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div>
+        <h1 class="title">Voice Actor Invoice Operations Dashboard</h1>
+        <div class="subtitle">Demo analytics view for Airtable + Tableau invoice operations across 17 voice actors</div>
+      </div>
+      <div class="badge">Demo snapshot: March 20, 2026</div>
+    </div>
+
+    <div class="grid">
+      <section class="card kpi">
+        <div class="eyebrow">Total Invoiced</div>
+        <h2 class="value">$35.6K</h2>
+        <div class="delta">34 invoices across Q1 2026</div>
+      </section>
+
+      <section class="card kpi">
+        <div class="eyebrow">Total Paid</div>
+        <h2 class="value">$16.7K</h2>
+        <div class="delta">18 settled payments recorded</div>
+      </section>
+
+      <section class="card kpi">
+        <div class="eyebrow">Outstanding</div>
+        <h2 class="value">$18.8K</h2>
+        <div class="delta">Pending and overdue balances combined</div>
+      </section>
+
+      <section class="card kpi">
+        <div class="eyebrow">Overdue Amount</div>
+        <h2 class="value">$7.9K</h2>
+        <div class="delta">6 invoices past due date</div>
+      </section>
+
+      <section class="card wide">
+        <h3 class="section-title">Monthly Invoiced Trend</h3>
+        <svg viewBox="0 0 760 290" width="100%" height="290" aria-label="Monthly invoiced trend">
+          <defs>
+            <linearGradient id="area" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#28536b" stop-opacity="0.28"/>
+              <stop offset="100%" stop-color="#28536b" stop-opacity="0.02"/>
+            </linearGradient>
+          </defs>
+          <line x1="60" y1="240" x2="710" y2="240" stroke="#cbbca8" stroke-width="1"/>
+          <line x1="60" y1="170" x2="710" y2="170" stroke="#e0d4c4" stroke-width="1"/>
+          <line x1="60" y1="100" x2="710" y2="100" stroke="#e0d4c4" stroke-width="1"/>
+          <text x="15" y="244" fill="#657084" font-size="12">$0</text>
+          <text x="6" y="174" fill="#657084" font-size="12">$8K</text>
+          <text x="0" y="104" fill="#657084" font-size="12">$16K</text>
+          <path d="M90 18 L385 56 L680 166 L680 240 L90 240 Z" fill="url(#area)"/>
+          <path d="M90 18 L385 56 L680 166" fill="none" stroke="#28536b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="90" cy="18" r="6" fill="#28536b"/>
+          <circle cx="385" cy="56" r="6" fill="#28536b"/>
+          <circle cx="680" cy="166" r="6" fill="#28536b"/>
+          <text x="70" y="266" fill="#657084" font-size="13">Jan</text>
+          <text x="365" y="266" fill="#657084" font-size="13">Feb</text>
+          <text x="660" y="266" fill="#657084" font-size="13">Mar</text>
+          <text x="60" y="36" fill="#1e2430" font-size="13">$16.5K</text>
+          <text x="355" y="74" fill="#1e2430" font-size="13">$13.1K</text>
+          <text x="650" y="184" fill="#1e2430" font-size="13">$6.0K</text>
+        </svg>
+        <div class="footer-note">Monthly billed volume softened in March while outstanding balances remained elevated.</div>
+      </section>
+
+      <section class="card narrow">
+        <h3 class="section-title">Invoice Status Split</h3>
+        <div class="legend">
+          <span><span class="dot" style="background: var(--paid);"></span>Paid</span>
+          <span><span class="dot" style="background: var(--pending);"></span>Pending</span>
+          <span><span class="dot" style="background: var(--overdue);"></span>Overdue</span>
+        </div>
+        <svg viewBox="0 0 320 280" width="100%" height="280" aria-label="Invoice status split">
+          <circle cx="160" cy="130" r="82" fill="none" stroke="#e6ddcf" stroke-width="34"/>
+          <circle cx="160" cy="130" r="82" fill="none" stroke="#1f7a5c" stroke-width="34"
+            stroke-dasharray="278 237" stroke-linecap="butt"
+            transform="rotate(-90 160 130)"/>
+          <circle cx="160" cy="130" r="82" fill="none" stroke="#d9a441" stroke-width="34"
+            stroke-dasharray="154 361" stroke-dashoffset="-278"
+            transform="rotate(-90 160 130)"/>
+          <circle cx="160" cy="130" r="82" fill="none" stroke="#c44536" stroke-width="34"
+            stroke-dasharray="93 422" stroke-dashoffset="-432"
+            transform="rotate(-90 160 130)"/>
+          <text x="160" y="125" text-anchor="middle" fill="#1e2430" font-size="34">34</text>
+          <text x="160" y="147" text-anchor="middle" fill="#657084" font-size="13">Invoices</text>
+        </svg>
+        <table>
+          <thead>
+            <tr><th>Status</th><th>Count</th><th>Share</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Paid</td><td>18</td><td>52.9%</td></tr>
+            <tr><td>Pending</td><td>10</td><td>29.4%</td></tr>
+            <tr><td>Overdue</td><td>6</td><td>17.6%</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card half">
+        <h3 class="section-title">Top Actors by Billed Amount</h3>
+        <div class="bars">
+          <div class="bar-row"><div>Mason Patel</div><div class="track"><div class="fill" style="width:100%; background: var(--accent);"></div></div><div>$2.8K</div></div>
+          <div class="bar-row"><div>Charlotte Reed</div><div class="track"><div class="fill" style="width:98.2%; background: var(--accent);"></div></div><div>$2.8K</div></div>
+          <div class="bar-row"><div>Daniel Nguyen</div><div class="track"><div class="fill" style="width:93.9%; background: var(--accent);"></div></div><div>$2.6K</div></div>
+          <div class="bar-row"><div>Sofia Ramirez</div><div class="track"><div class="fill" style="width:90.5%; background: var(--accent);"></div></div><div>$2.5K</div></div>
+          <div class="bar-row"><div>Benjamin Davis</div><div class="track"><div class="fill" style="width:89.8%; background: var(--accent);"></div></div><div>$2.5K</div></div>
+        </div>
+        <div class="footer-note">Highest-billed talent concentrated in multilingual narration and training content.</div>
+      </section>
+
+      <section class="card half">
+        <h3 class="section-title">Largest Outstanding Balances</h3>
+        <div class="bars">
+          <div class="bar-row"><div>Charlotte Reed</div><div class="track"><div class="fill" style="width:100%; background: var(--overdue);"></div></div><div>$2.8K</div></div>
+          <div class="bar-row"><div>Mason Patel</div><div class="track"><div class="fill" style="width:96.5%; background: var(--overdue);"></div></div><div>$2.8K</div></div>
+          <div class="bar-row"><div>Daniel Nguyen</div><div class="track"><div class="fill" style="width:90.6%; background: var(--overdue);"></div></div><div>$2.6K</div></div>
+          <div class="bar-row"><div>Henry Scott</div><div class="track"><div class="fill" style="width:84.9%; background: var(--overdue);"></div></div><div>$2.4K</div></div>
+          <div class="bar-row"><div>Sofia Ramirez</div><div class="track"><div class="fill" style="width:57.2%; background: var(--overdue);"></div></div><div>$1.6K</div></div>
+        </div>
+        <div class="footer-note">Outstanding exposure is driven by pending training, localization, and game voiceover work.</div>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

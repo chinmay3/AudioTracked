@@ -1,0 +1,18 @@
+actor_id,actor_name,agent_name,region,primary_language,rate_per_hour_usd,payment_terms,status,first_project_date
+VA001,Ava Sinclair,Lumen Talent,Los Angeles,English,185,Net 30,Active,2024-01-12
+VA002,Noah Bennett,Northline Voices,New York,English,160,Net 15,Active,2024-02-03
+VA003,Sofia Ramirez,Blue Arc Agency,Miami,Spanish,175,Net 30,Active,2024-01-28
+VA004,Lucas Kim,Silver Reel,Seattle,Korean,190,Net 30,Active,2024-03-11
+VA005,Emma Clarke,Northline Voices,Toronto,English,155,Net 15,Active,2024-02-17
+VA006,Ethan Brooks,Maple Crest,Chicago,English,170,Net 30,Active,2024-01-08
+VA007,Isabella Rossi,Vox House,New York,Italian,200,Net 30,Active,2024-04-09
+VA008,Mason Patel,Blue Arc Agency,Austin,English,165,Net 15,Active,2024-02-22
+VA009,Mia Chen,Silver Reel,San Francisco,Mandarin,210,Net 30,Active,2024-01-19
+VA010,James Walker,Lumen Talent,Atlanta,English,150,Net 15,Active,2024-03-04
+VA011,Charlotte Reed,Independent,Denver,English,145,Net 15,Active,2024-02-12
+VA012,Benjamin Davis,Vox House,Los Angeles,English,180,Net 30,Active,2024-04-14
+VA013,Amelia Foster,Maple Crest,Vancouver,English,172,Net 30,Active,2024-01-25
+VA014,Henry Scott,Independent,Nashville,English,158,Net 15,Active,2024-03-20
+VA015,Harper Lewis,Northline Voices,Boston,English,168,Net 30,Active,2024-02-07
+VA016,Daniel Nguyen,Silver Reel,San Jose,Vietnamese,195,Net 30,Active,2024-01-31
+VA017,Evelyn Turner,Lumen Talent,Portland,English,162,Net 15,Active,2024-03-27
